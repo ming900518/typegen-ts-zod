@@ -92,6 +92,7 @@ impl Language for TypeScript {
             )?;
             writeln!(w, "*/")?;
             writeln!(w)?;
+            writeln!(w, "import {{z}} from \"zod\";\n")?;
         }
         Ok(())
     }
@@ -392,10 +393,10 @@ impl TypeScript {
             .is_some();
         writeln!(
             w,
-            "\t\t{}: z.{}{}{}{};",
+            "\t\t{}: z.{}(){}{}{},",
             typescript_property_aware_rename(&field.id.renamed),
-            optional.then(|| ".nullable()").unwrap_or_default(),
             ts_ty.0,
+            optional.then(|| ".nullable()").unwrap_or_default(),
             double_optional.then(|| ".optional()").unwrap_or_default(),
             is_readonly.then(|| ".readonly()").unwrap_or_default(),
         )?;
