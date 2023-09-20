@@ -7,18 +7,9 @@ use itertools::Itertools;
 use proc_macro2::Ident;
 use std::{collections::HashMap, fmt::Debug, io::Write, str::FromStr};
 
-mod go;
-mod kotlin;
-mod scala;
-mod swift;
 mod typescript;
 
 use crate::rust_types::{RustType, RustTypeFormatError, SpecialRustType};
-pub use go::Go;
-pub use kotlin::Kotlin;
-pub use scala::Scala;
-pub use swift::GenericConstraints;
-pub use swift::Swift;
 pub use typescript::TypeScript;
 
 /// All supported programming languages.
@@ -45,10 +36,6 @@ impl FromStr for SupportedLanguage {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "go" => Ok(Self::Go),
-            "kotlin" => Ok(Self::Kotlin),
-            "scala" => Ok(Self::Scala),
-            "swift" => Ok(Self::Swift),
             "typescript" => Ok(Self::TypeScript),
             _ => Err(ParseError::UnsupportedLanguage(s.into())),
         }
@@ -115,7 +102,7 @@ pub trait Language {
         &mut self,
         ty: &RustType,
         generic_types: &[String],
-    ) -> Result<String, RustTypeFormatError> {
+    ) -> Result<(String, bool), RustTypeFormatError> {
         match ty {
             RustType::Simple { id } => self.format_simple_type(id, generic_types),
             RustType::Generic { id, parameters } => {
@@ -134,11 +121,11 @@ pub trait Language {
         &mut self,
         base: &String,
         _generic_types: &[String],
-    ) -> Result<String, RustTypeFormatError> {
+    ) -> Result<(String, bool), RustTypeFormatError> {
         Ok(if let Some(mapped) = self.type_map().get(base) {
-            mapped.into()
+            (mapped.into(), true)
         } else {
-            base.into()
+            (base.into(), true)
         })
     }
 
@@ -151,21 +138,25 @@ pub trait Language {
         base: &String,
         parameters: &[RustType],
         generic_types: &[String],
-    ) -> Result<String, RustTypeFormatError> {
+    ) -> Result<(String, bool), RustTypeFormatError> {
         if let Some(mapped) = self.type_map().get(base) {
-            Ok(mapped.into())
+            Ok((mapped.into(), true))
         } else {
             let parameters: Result<Vec<String>, RustTypeFormatError> = parameters
                 .iter()
-                .map(|p| self.format_type(p, generic_types))
+                .map(|p| self.format_type(p, generic_types).map(|data| data.0))
                 .collect();
             let parameters = parameters?;
-            Ok(format!(
-                "{}{}",
-                self.format_simple_type(base, generic_types)?,
-                (!parameters.is_empty())
-                    .then(|| self.format_generic_parameters(parameters))
-                    .unwrap_or_default()
+            Ok((
+                format!(
+                    "{}{}",
+                    self.format_simple_type(base, generic_types)
+                        .map(|data| data.0)?,
+                    (!parameters.is_empty())
+                        .then(|| self.format_generic_parameters(parameters))
+                        .unwrap_or_default()
+                ),
+                true,
             ))
         }
     }
@@ -181,7 +172,7 @@ pub trait Language {
         &mut self,
         special_ty: &SpecialRustType,
         generic_types: &[String],
-    ) -> Result<String, RustTypeFormatError>;
+    ) -> Result<(String, bool), RustTypeFormatError>;
 
     /// Implementors can use this function to write a header for typeshared code
     fn begin_file(&mut self, _w: &mut dyn Write) -> std::io::Result<()> {

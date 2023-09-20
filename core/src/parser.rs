@@ -710,7 +710,7 @@ fn is_skipped(attrs: &[syn::Attribute]) -> bool {
     attrs.iter().any(|attr| {
         get_serde_meta_items(attr)
             .into_iter()
-            .chain(get_typeshare_meta_items(attr).into_iter())
+            .chain(get_typeshare_meta_items(attr))
             .any(|arg| match arg {
                 NestedMeta::Meta(Meta::Path(path)) => {
                     if let Some(ident) = path.get_ident() {
@@ -746,10 +746,4 @@ fn test_rename_all_to_case() {
             test.1
         );
     }
-}
-
-/// Removes `-` characters from identifiers
-pub(crate) fn remove_dash_from_identifier(name: &str) -> String {
-    // Dashes are not valid in identifiers, so we map them to underscores
-    name.replace('-', "_")
 }

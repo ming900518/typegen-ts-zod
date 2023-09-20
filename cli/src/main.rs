@@ -8,11 +8,8 @@ use ignore::types::TypesBuilder;
 use ignore::WalkBuilder;
 use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use std::{fs, path::Path};
-use typeshare_core::language::GenericConstraints;
-#[cfg(feature = "go")]
-use typeshare_core::language::Go;
 use typeshare_core::{
-    language::{Kotlin, Language, Scala, SupportedLanguage, Swift, TypeScript},
+    language::{Language, SupportedLanguage, TypeScript},
     parser::ParsedData,
 };
 
@@ -32,11 +29,7 @@ const ARG_CONFIG_FILE_NAME: &str = "CONFIGFILENAME";
 const ARG_GENERATE_CONFIG: &str = "generate-config-file";
 const ARG_OUTPUT_FILE: &str = "output-file";
 
-#[cfg(feature = "go")]
-const AVAILABLE_LANGUAGES: [&str; 5] = ["kotlin", "scala", "swift", "typescript", "go"];
-
-#[cfg(not(feature = "go"))]
-const AVAILABLE_LANGUAGES: [&str; 4] = ["kotlin", "scala", "swift", "typescript"];
+const AVAILABLE_LANGUAGES: [&str; 1] = ["typescript"];
 
 fn build_command() -> Command<'static> {
     command!("typeshare")
@@ -181,42 +174,10 @@ fn main() {
         .and_then(|parsed| parsed);
 
     let mut lang: Box<dyn Language> = match language_type {
-        Some(SupportedLanguage::Swift) => Box::new(Swift {
-            prefix: config.swift.prefix,
-            type_mappings: config.swift.type_mappings,
-            default_decorators: config.swift.default_decorators,
-            default_generic_constraints: GenericConstraints::from_config(
-                config.swift.default_generic_constraints,
-            ),
-            ..Default::default()
-        }),
-        Some(SupportedLanguage::Kotlin) => Box::new(Kotlin {
-            package: config.kotlin.package,
-            module_name: config.kotlin.module_name,
-            type_mappings: config.kotlin.type_mappings,
-            ..Default::default()
-        }),
-        Some(SupportedLanguage::Scala) => Box::new(Scala {
-            package: config.scala.package,
-            module_name: config.scala.module_name,
-            type_mappings: config.scala.type_mappings,
-            ..Default::default()
-        }),
         Some(SupportedLanguage::TypeScript) => Box::new(TypeScript {
             type_mappings: config.typescript.type_mappings,
             ..Default::default()
         }),
-        #[cfg(feature = "go")]
-        Some(SupportedLanguage::Go) => Box::new(Go {
-            package: config.go.package,
-            type_mappings: config.go.type_mappings,
-            uppercase_acronyms: config.go.uppercase_acronyms,
-            ..Default::default()
-        }),
-        #[cfg(not(feature = "go"))]
-        Some(SupportedLanguage::Go) => {
-            panic!("go support is currently experimental and must be enabled as a feature flag for typeshare-cli")
-        }
         _ => {
             panic!("argument parser didn't validate ARG_TYPE correctly");
         }

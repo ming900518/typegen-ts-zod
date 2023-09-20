@@ -237,7 +237,7 @@ mod tests {
         }
 
         let j = serde_json::to_string(&Person { age: I54::from(12) }).unwrap();
-        assert_eq!(j, r##"{"age":12}"##);
+        assert_eq!(j, r#"{"age":12}"#);
     }
 
     #[test]
@@ -247,7 +247,7 @@ mod tests {
             age: I54,
         }
 
-        let j = r##"{"age":14}"##;
+        let j = r#"{"age":14}"#;
         assert_eq!(
             serde_json::from_str::<Person>(j).unwrap(),
             Person { age: I54::from(14) }
