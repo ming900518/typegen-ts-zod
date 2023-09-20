@@ -221,7 +221,6 @@ impl TypeScript {
                 RustEnumVariant::Unit(shared) => {
                     writeln!(w)?;
                     self.write_comments(w, 1, &shared.comments)?;
-                    println!("\t{} = {:?},", shared.id.original, &shared.id.renamed);
                     write!(w, "\t{} = {:?},", shared.id.original, &shared.id.renamed)
                 }
                 _ => unreachable!(),
